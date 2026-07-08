@@ -1,6 +1,7 @@
 services:
   radar-jf:
     build: .
+    container_name: radar-jf
     hostname: radar-jf
     restart: unless-stopped
     environment:
