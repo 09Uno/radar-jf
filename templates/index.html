@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar JF — Monitor DJEN/CNJ</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0e17;
+            --surface: #111827;
+            --surface-2: #1a2234;
+            --border: #1e293b;
+            --border-hover: #334155;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --primary-glow: rgba(59, 130, 246, 0.15);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .login-card h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+
+        .login-card .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .login-card input[type="password"] {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .login-card input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .login-error {
+            color: var(--danger);
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            width: 100%;
+        }
+
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-secondary {
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover { border-color: var(--border-hover); background: #1e293b; }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .btn-sm { padding: 8px 16px; font-size: 13px; }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* App Layout */
+        .app { display: none; }
+
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar-brand {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .topbar-right .btn-logout {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .topbar-right .btn-logout:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .icon-blue { background: rgba(59, 130, 246, 0.15); }
+        .icon-green { background: rgba(16, 185, 129, 0.15); }
+        .icon-purple { background: rgba(139, 92, 246, 0.15); }
+
+        /* File Upload */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-glow);
+        }
+
+        .upload-zone .upload-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p { color: var(--text-muted); font-size: 14px; }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .file-item:hover { border-color: var(--border-hover); }
+
+        .file-item .file-name {
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-item .file-size {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .badge-default {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--primary);
+        }
+
+        /* Config Form */
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 640px) {
+            .config-grid { grid-template-columns: 1fr; }
+        }
+
+        .form-group { margin-bottom: 0; }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-group select,
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .tribunais-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .trib-chip {
+            padding: 6px 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .trib-chip.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .trib-chip:hover:not(.active) {
+            border-color: var(--border-hover);
+        }
+
+        .start-section {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* Progress / Running */
+        .progress-card { display: none; }
+
+        .progress-bar-wrapper {
+            background: var(--surface-2);
+            border-radius: 6px;
+            height: 8px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 6px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .log-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            max-height: 240px;
+            overflow-y: auto;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            color: var(--text-muted);
+            margin-top: 16px;
+        }
+
+        .log-box .log-line { white-space: pre-wrap; word-break: break-all; }
+
+        /* Results */
+        .results-card { display: none; }
+
+        .results-stats {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .results-table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .results-table th {
+            background: var(--surface-2);
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            white-space: nowrap;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .results-table tbody tr:hover {
+            background: var(--surface-2);
+        }
+
+        .results-table a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .results-table a:hover { text-decoration: underline; }
+
+        .results-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in { animation: fadeIn 0.3s ease; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+            border: 1px solid;
+        }
+
+        .toast-success { background: rgba(16, 185, 129, 0.1); border-color: var(--success); color: var(--success); }
+        .toast-error { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+    <div class="login-card fade-in">
+        <h1>Radar JF</h1>
+        <p>Monitor de Ações Judiciais DJEN/CNJ</p>
+        <div class="input-group">
+            <input type="password" id="loginKey" placeholder="Chave de acesso" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') doLogin()">
+        </div>
+        <div id="loginError" class="login-error">Chave inválida. Tente novamente.</div>
+        <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app">
+    <header class="topbar">
+        <div class="topbar-brand">Radar JF</div>
+        <div class="topbar-right">
+            <span style="color: var(--text-muted); font-size: 13px;">Monitor DJEN/CNJ</span>
+            <button class="btn-logout" onclick="doLogout()">Sair</button>
+        </div>
+    </header>
+
+    <main class="main-content">
+
+        <!-- Arquivo Base -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="icon icon-blue">&#128196;</div>
+                    Arquivo Base (Planilha de Alvos)
+                </div>
+            </div>
+
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">&#128228;</div>
+                <p>Arraste um arquivo .xlsx aqui ou clique para selecionar</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="uploadFile(this.files[0])">
+            </div>
+
+            <div class="file-list" id="fileList"></div>
+        </div>
+
+        <!-- Configuracoes -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="icon icon-purple">&#9881;</div>
+                    Configurar Varredura
+                </div>
+            </div>
+
+            <div class="config-grid">
+                <div class="form-group">
+                    <label>Janela de tempo</label>
+                    <select id="cfgDias">
+                        <option value="7">7 dias</option>
+                        <option value="30" selected>30 dias</option>
+                        <option value="90">90 dias</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <label style="font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; display: block;">Tribunais</label>
+                <div class="tribunais-grid" id="tribunaisGrid"></div>
+            </div>
+
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="cfgInst" checked> Instituições
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="cfgSind" checked> Sindicatos
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="cfgEsc" checked> Escritórios
+                </label>
+            </div>
+
+            <div class="start-section">
+                <button class="btn btn-primary" id="btnStart" onclick="startMonitor()">
+                    Iniciar Varredura
+                </button>
+            </div>
+        </div>
+
+        <!-- Progresso -->
+        <div class="card progress-card fade-in" id="progressCard">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="spinner"></span>
+                    Varredura em andamento
+                </div>
+            </div>
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-info">
+                <span id="progressText">Iniciando...</span>
+                <span id="progressPct">0%</span>
+            </div>
+            <div class="log-box" id="logBox"></div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="card results-card fade-in" id="resultsCard">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="icon icon-green">&#9989;</div>
+                    Resultados
+                </div>
+            </div>
+
+            <div class="results-stats" id="resultsStats"></div>
+
+            <div class="results-table-wrapper" style="max-height: 500px; overflow-y: auto;">
+                <table class="results-table">
+                    <thead id="resultsThead"></thead>
+                    <tbody id="resultsTbody"></tbody>
+                </table>
+            </div>
+
+            <div class="results-actions">
+                <button class="btn btn-success btn-sm" id="btnDownload" onclick="downloadResult()">
+                    &#128229; Baixar Excel
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="resetView()">
+                    Nova varredura
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+// ===== Estado =====
+let currentJobId = null;
+let pollTimer = null;
+const TRIBUNAIS_ALL = ["TRF1", "TRF2", "TRF3", "TRF4", "TRF5", "TRF6"];
+let selectedTribunais = new Set(TRIBUNAIS_ALL);
+
+// ===== Init =====
+document.addEventListener("DOMContentLoaded", async () => {
+    initTribunais();
+    initDragDrop();
+    const res = await api("/api/auth/check");
+    if (res.authenticated) showApp();
+});
+
+// ===== Auth =====
+async function doLogin() {
+    const key = document.getElementById("loginKey").value;
+    try {
+        await api("/api/auth/login", { method: "POST", body: JSON.stringify({ key }) });
+        showApp();
+    } catch (e) {
+        document.getElementById("loginError").style.display = "block";
+    }
+}
+
+async function doLogout() {
+    await api("/api/auth/logout", { method: "POST" });
+    document.getElementById("app").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("loginKey").value = "";
+    document.getElementById("loginError").style.display = "none";
+}
+
+function showApp() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadFiles();
+}
+
+// ===== Files =====
+async function loadFiles() {
+    const data = await api("/api/files/list");
+    const list = document.getElementById("fileList");
+    list.innerHTML = "";
+    for (const f of data.files) {
+        const size = (f.size / 1024).toFixed(1) + " KB";
+        const badges = [];
+        if (f.active) badges.push('<span class="badge badge-active">Ativo</span>');
+        if (f.default) badges.push('<span class="badge badge-default">Padrao</span>');
+
+        const div = document.createElement("div");
+        div.className = "file-item";
+        div.innerHTML = `
+            <div>
+                <div class="file-name">&#128196; ${f.name} ${badges.join(" ")}</div>
+                <div class="file-size">${size}</div>
+            </div>
+            ${!f.active ? `<button class="btn btn-secondary btn-sm" onclick="selectFile('${f.name}')">Selecionar</button>` : ""}
+        `;
+        list.appendChild(div);
+    }
+}
+
+async function uploadFile(file) {
+    if (!file) return;
+    const form = new FormData();
+    form.append("file", file);
+    try {
+        await api("/api/files/upload", { method: "POST", body: form, raw: true });
+        toast("Arquivo enviado com sucesso", "success");
+        loadFiles();
+    } catch (e) {
+        toast("Erro ao enviar arquivo: " + e.message, "error");
+    }
+}
+
+async function selectFile(name) {
+    await api("/api/files/select", { method: "POST", body: JSON.stringify({ filename: name }) });
+    toast("Arquivo selecionado: " + name, "success");
+    loadFiles();
+}
+
+// ===== Tribunais =====
+function initTribunais() {
+    const grid = document.getElementById("tribunaisGrid");
+    for (const t of TRIBUNAIS_ALL) {
+        const chip = document.createElement("div");
+        chip.className = "trib-chip active";
+        chip.textContent = t;
+        chip.dataset.trib = t;
+        chip.onclick = () => {
+            if (selectedTribunais.has(t)) {
+                selectedTribunais.delete(t);
+                chip.classList.remove("active");
+            } else {
+                selectedTribunais.add(t);
+                chip.classList.add("active");
+            }
+        };
+        grid.appendChild(chip);
+    }
+}
+
+// ===== Drag & Drop =====
+function initDragDrop() {
+    const zone = document.getElementById("uploadZone");
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) uploadFile(file);
+    });
+}
+
+// ===== Monitor =====
+async function startMonitor() {
+    const dias = parseInt(document.getElementById("cfgDias").value);
+    const tribunais = [...selectedTribunais];
+    if (tribunais.length === 0) { toast("Selecione ao menos um tribunal", "error"); return; }
+
+    const body = {
+        dias,
+        tribunais,
+        instituicoes: document.getElementById("cfgInst").checked,
+        sindicatos: document.getElementById("cfgSind").checked,
+        escritorios: document.getElementById("cfgEsc").checked,
+    };
+
+    try {
+        const res = await api("/api/monitor/start", { method: "POST", body: JSON.stringify(body) });
+        currentJobId = res.job_id;
+        document.getElementById("progressCard").style.display = "block";
+        document.getElementById("resultsCard").style.display = "none";
+        document.getElementById("btnStart").disabled = true;
+        document.getElementById("logBox").innerHTML = "";
+        pollProgress();
+    } catch (e) {
+        toast(e.message || "Erro ao iniciar varredura", "error");
+    }
+}
+
+async function pollProgress() {
+    if (!currentJobId) return;
+    try {
+        const data = await api(`/api/monitor/status/${currentJobId}`);
+        const pct = data.total > 0 ? Math.round((data.progress / data.total) * 100) : 0;
+        document.getElementById("progressBar").style.width = pct + "%";
+        document.getElementById("progressPct").textContent = pct + "%";
+        document.getElementById("progressText").textContent = data.current
+            ? `Processando: ${data.current} (${data.progress}/${data.total})`
+            : "Iniciando...";
+
+        const logBox = document.getElementById("logBox");
+        logBox.innerHTML = data.log.map(l => `<div class="log-line">${escapeHtml(l)}</div>`).join("");
+        logBox.scrollTop = logBox.scrollHeight;
+
+        if (data.status === "done") {
+            document.getElementById("btnStart").disabled = false;
+            showResults(data);
+            return;
+        } else if (data.status === "error") {
+            document.getElementById("btnStart").disabled = false;
+            toast("Erro: " + (data.error || "Falha desconhecida"), "error");
+            return;
+        }
+    } catch (e) { /* ignore polling errors */ }
+
+    pollTimer = setTimeout(pollProgress, 1500);
+}
+
+async function showResults(statusData) {
+    document.getElementById("progressCard").style.display = "none";
+    document.getElementById("resultsCard").style.display = "block";
+
+    const data = await api(`/api/monitor/results/${currentJobId}`);
+    const results = data.results;
+
+    // Stats
+    const statsEl = document.getElementById("resultsStats");
+    const tipos = {};
+    results.forEach(r => { tipos[r["Tipo do alvo"]] = (tipos[r["Tipo do alvo"]] || 0) + 1; });
+    statsEl.innerHTML = `
+        <div class="stat"><div class="stat-value">${results.length}</div><div class="stat-label">Total</div></div>
+        ${Object.entries(tipos).map(([k, v]) => `<div class="stat"><div class="stat-value">${v}</div><div class="stat-label">${k}</div></div>`).join("")}
+    `;
+
+    // Table
+    const cols = ["Alvo", "Tipo do alvo", "Tribunal", "N\u00ba do processo", "Classe", "Tipo de comunica\u00e7\u00e3o", "Data disponibiliza\u00e7\u00e3o", "Polo do alvo"];
+    document.getElementById("resultsThead").innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
+
+    const tbody = document.getElementById("resultsTbody");
+    tbody.innerHTML = "";
+    for (const r of results.slice(0, 200)) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = cols.map(c => {
+            let val = r[c] || "";
+            if (c === "N\u00ba do processo" && r["Link do processo"]) {
+                val = `<a href="${r["Link do processo"]}" target="_blank" rel="noopener">${val}</a>`;
+            }
+            return `<td title="${escapeHtml(String(r[c] || ""))}">${val}</td>`;
+        }).join("");
+        tbody.appendChild(tr);
+    }
+
+    if (results.length > 200) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="${cols.length}" style="text-align:center;color:var(--text-muted);">... e mais ${results.length - 200} resultados (baixe o Excel para ver todos)</td>`;
+        tbody.appendChild(tr);
+    }
+}
+
+async function downloadResult() {
+    if (!currentJobId) return;
+    window.open(`/api/monitor/download/${currentJobId}`, "_blank");
+}
+
+function resetView() {
+    document.getElementById("progressCard").style.display = "none";
+    document.getElementById("resultsCard").style.display = "none";
+    currentJobId = null;
+}
+
+// ===== API Helper =====
+async function api(url, opts = {}) {
+    const headers = {};
+    if (!opts.raw) headers["Content-Type"] = "application/json";
+
+    const res = await fetch(url, {
+        ...opts,
+        headers: { ...headers, ...opts.headers },
+        credentials: "same-origin",
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || "Request failed");
+    }
+    return res.json();
+}
+
+// ===== Utils =====
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function toast(msg, type = "success") {
+    const el = document.createElement("div");
+    el.className = `toast toast-${type}`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+}
+</script>
+
+</body>
+</html>

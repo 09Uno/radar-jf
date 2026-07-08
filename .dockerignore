@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+.env
+.history
+uploads/*
+results/*
+*.xlsx
+!requirements.txt
