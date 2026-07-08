@@ -64,6 +64,7 @@ ITENS_POR_PAGINA = 100
 MAX_PAGINAS      = 20          # trava de segurança por alvo/tribunal
 
 API_URL = "https://comunicaapi.pje.jus.br/api/v1/comunicacao"
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}
 
 # =====================================================================
 # LEITURA DA PLANILHA-BASE
@@ -156,7 +157,7 @@ def _get(params):
     """GET com tentativas. Retorna dict JSON ou None (ex.: OAB inexistente => 500)."""
     for tentativa in range(1, TENTATIVAS + 1):
         try:
-            resp = requests.get(API_URL, params=params, timeout=40)
+            resp = requests.get(API_URL, params=params, headers=HEADERS, timeout=40)
             if resp.status_code == 200:
                 return resp.json()
             # 500 costuma ser "sem resultado" para OAB inexistente — não insiste.
